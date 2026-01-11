@@ -1,8 +1,11 @@
 import sqlite3
+import os
 from sentence_transformers import SentenceTransformer
 import numpy as np
 import faiss
-DB_PATH = "memory.db"
+
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+DB_PATH = os.path.join(BASE_DIR, "memory.db")
 conn = sqlite3.connect(DB_PATH, check_same_thread=False)
 cur = conn.cursor()
 cur.execute("""
