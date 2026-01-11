@@ -1,6 +1,5 @@
 fastapi
 uvicorn
 requests
-sqlite-utils
 google-generativeai
 python-dotenv
