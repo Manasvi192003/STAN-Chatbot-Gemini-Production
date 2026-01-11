@@ -40,35 +40,17 @@ def _load_user_memory(user_id):
         user_texts[user_id].append(text)
         emb = model.encode([text])
         user_indexes[user_id].add(np.array(emb))
+# memory.py
+# Lightweight deployment-safe memory stub
 
 def store_memory(user_id, text):
-    _init_user(user_id)
-
-    cur.execute(
-        "INSERT INTO memory (user_id, text) VALUES (?, ?)",
-        (user_id, text)
-    )
-    conn.commit()
-
-    user_texts[user_id].append(text)
-    emb = model.encode([text])
-    user_indexes[user_id].add(np.array(emb))
+    # Memory disabled in hosted demo to reduce RAM usage
+    pass
 
 def retrieve_memory(user_id, query, k=3):
-    if user_id not in user_texts:
-        _load_user_memory(user_id)
+    # No long-term memory retrieval in demo
+    return []
 
-    if not user_texts[user_id]:
-        return []
-
-    emb = model.encode([query])
-    _, I = user_indexes[user_id].search(np.array(emb), k)
-
-    return [
-        user_texts[user_id][i]
-        for i in I[0]
-        if i < len(user_texts[user_id])
-    ]
 
 def clear_user_memory(user_id):
     cur.execute("DELETE FROM memory WHERE user_id = ?", (user_id,))
