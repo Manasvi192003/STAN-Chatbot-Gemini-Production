@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>Nova – Conversational AI</title>
+
+<style>
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background: #0f172a;
+  font-family: "Segoe UI", sans-serif;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+}
+
+.chat-app {
+  width: 490px;
+  height: 580px;
+  background: #020617;
+  border-radius: 16px;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 25px 50px rgba(0,0,0,0.7);
+}
+
+/* Header */
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px;
+}
+
+.header h2 {
+  margin: 0;
+  font-size: 18px;
+  color: white;
+}
+
+.header span {
+  font-size: 12px;
+  color: #22c55e;
+}
+
+#newSessionBtn {
+  background: transparent;
+  border: 1px solid #22c55e;
+  color: #22c55e;
+  padding: 6px 10px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 12px;
+}
+
+#newSessionBtn:hover {
+  background: #22c55e;
+  color: black;
+}
+
+/* Messages */
+.messages {
+  flex: 1;
+  padding: 14px;
+  overflow-y: auto;
+}
+
+.message {
+  max-width: 75%;
+  padding: 12px 14px;
+  margin-bottom: 6px;
+  border-radius: 12px;
+  line-height: 1.4;
+  font-size: 16px;
+}
+
+.user {
+  background: #2563eb;
+  color: white;
+  margin-left: auto;
+  border-bottom-right-radius: 4px;
+}
+
+.bot {
+  background: #1e293b;
+  color: #e5e7eb;
+  margin-right: auto;
+  border-bottom-left-radius: 4px;
+}
+
+.timestamp {
+  font-size: 11px;
+  color: #94a3b8;
+  margin-bottom: 10px;
+}
+
+.user-time {
+  text-align: right;
+}
+
+.bot-time {
+  text-align: left;
+}
+
+/* Typing indicator */
+.typing {
+  font-style: italic;
+  color: #94a3b8;
+  font-size: 14px;
+  margin-bottom: 10px;
+}
+
+.typing span {
+  animation: blink 1.4s infinite both;
+}
+
+.typing span:nth-child(2) { animation-delay: 0.2s; }
+.typing span:nth-child(3) { animation-delay: 0.4s; }
+
+@keyframes blink {
+  0% { opacity: 0.2; }
+  20% { opacity: 1; }
+  100% { opacity: 0.2; }
+}
+
+/* Input */
+.input-area {
+  display: flex;
+  padding: 12px;
+  border-top: 1px solid #1e293b;
+}
+
+.input-area input {
+  flex: 1;
+  padding: 12px;
+  border-radius: 10px;
+  border: none;
+  outline: none;
+  font-size: 14px;
+}
+
+.input-area button {
+  margin-left: 10px;
+  padding: 0 16px;
+  background: #22c55e;
+  color: black;
+  border: none;
+  border-radius: 10px;
+  cursor: pointer;
+  font-weight: bold;
+}
+</style>
+</head>
+
+<body>
+
+<div class="chat-app">
+  <div class="header">
+    <h2>Nova 🤖</h2>
+    <span>Online • Emotion-aware AI</span>
+    <button id="newSessionBtn">New Session</button>
+  </div>
+
+  <div class="messages" id="messages"></div>
+
+  <div class="input-area">
+    <input id="input" placeholder="Type your message..." />
+    <button id="sendBtn">Send</button>
+  </div>
+</div>
+
+<script>
+/* Time helper */
+function getTime() {
+  return new Date().toLocaleTimeString([], {
+    hour: '2-digit',
+    minute: '2-digit'
+  });
+}
+
+const messages = document.getElementById("messages");
+const input = document.getElementById("input");
+const button = document.getElementById("sendBtn");
+
+/* Persistent user */
+let USER_ID = localStorage.getItem("nova_user_id");
+if (!USER_ID) {
+  USER_ID = crypto.randomUUID();
+  localStorage.setItem("nova_user_id", USER_ID);
+}
+
+/* Add normal message */
+function addMessage(text, type) {
+  const msg = document.createElement("div");
+  msg.className = "message " + type;
+  msg.textContent = text;
+
+  const time = document.createElement("div");
+  time.className = "timestamp " + (type === "user" ? "user-time" : "bot-time");
+  time.textContent = getTime();
+
+  messages.appendChild(msg);
+  messages.appendChild(time);
+  messages.scrollTop = messages.scrollHeight;
+}
+
+/* Typing indicator */
+let typingDiv = null;
+
+function showTyping() {
+  typingDiv = document.createElement("div");
+  typingDiv.className = "message bot typing";
+  typingDiv.innerHTML = `Nova is typing<span>.</span><span>.</span><span>.</span>`;
+  messages.appendChild(typingDiv);
+  messages.scrollTop = messages.scrollHeight;
+}
+
+function removeTyping() {
+  if (typingDiv) {
+    typingDiv.remove();
+    typingDiv = null;
+  }
+}
+
+/* Character-by-character streaming + timestamp */
+function streamBotMessage(text) {
+  const msg = document.createElement("div");
+  msg.className = "message bot";
+  msg.textContent = "";
+  messages.appendChild(msg);
+
+  let index = 0;
+
+  const interval = setInterval(() => {
+    msg.textContent += text[index];
+    messages.scrollTop = messages.scrollHeight;
+    index++;
+
+    if (index >= text.length) {
+      clearInterval(interval);
+
+      const time = document.createElement("div");
+      time.className = "timestamp bot-time";
+      time.textContent = getTime();
+      messages.appendChild(time);
+    }
+  },25);
+}
+
+/* Send */
+async function send() {
+  const text = input.value.trim();
+  if (!text) return;
+
+  addMessage(text, "user");
+  input.value = "";
+  showTyping();
+
+  try {
+    const res = await fetch("http://127.0.0.1:8000/chat", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ user_id: USER_ID, message: text })
+    });
+
+    const data = await res.json();
+    removeTyping();
+    streamBotMessage(data.reply);
+
+  } catch (err) {
+    removeTyping();
+    addMessage("Error connecting to backend.", "bot");
+  }
+}
+
+button.addEventListener("click", send);
+input.addEventListener("keydown", e => {
+  if (e.key === "Enter") send();
+});
+
+/* New Session = UI reset only */
+document.getElementById("newSessionBtn").addEventListener("click", () => {
+  messages.innerHTML = "";
+  addMessage("✨ New session started. I'm ready when you are!", "bot");
+});
+</script>
+
+</body>
+</html>
+
+
+
+
+
