@@ -8,4 +8,5 @@ GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
 BOT_NAME = "Nova"
 
 if not GEMINI_API_KEY:
-    raise ValueError("GEMINI_API_KEY not found. Check your .env file.")
+    print("⚠️ GEMINI_API_KEY not found. Using fallback.")
+
