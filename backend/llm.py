@@ -1,16 +1,14 @@
-import google.generativeai as genai
+from google import genai
 from config import GEMINI_API_KEY
 
+client = genai.Client(api_key=GEMINI_API_KEY)
+
 def call_llm(prompt: str) -> str:
-    if not GEMINI_API_KEY:
-        return "Gemini API key is missing."
-
     try:
-        genai.configure(api_key=GEMINI_API_KEY)
-
-        model = genai.GenerativeModel("gemini-pro")
-        response = model.generate_content(prompt)
-
+        response = client.models.generate_content(
+            model="gemini-1.5-flash",
+            contents=prompt
+        )
         return response.text.strip()
 
     except Exception as e:
